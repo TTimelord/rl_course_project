@@ -44,5 +44,8 @@ Documentation: https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2Sedq
         存放机器人和仿真环境的参数
 
 # TODO
+## 确定参数
 1. friction, max_torque, max_velocity
 2. p.setJointMotorControl2中的positionGain
+## 奖励函数
+1. contact reward 需要重新检查link序号

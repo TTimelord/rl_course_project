@@ -43,8 +43,8 @@ class KickBall(gym.Env):
             p.connect(p.DIRECT)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.resetDebugVisualizerCamera(cameraDistance=1, cameraYaw=70, cameraPitch=-40,
-                                 cameraTargetPosition=[0,0,0.2])
+        p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=70, cameraPitch=-60,
+                                 cameraTargetPosition=[2,-0.5,0.2])
         lower_joints = self.robot_config.lower_joints
         upper_joints = self.robot_config.upper_joints
         self.action_space = spaces.Box(low=np.array(lower_joints), high=np.array(upper_joints))
@@ -126,7 +126,7 @@ class KickBall(gym.Env):
                 # 'velo_regu': joint_velo_regu_reward, 'no_jump': nojump_reward,
                 # 'foot_contact': foot_contact_reward, 'body_contact': body_contact_reward,
                 'ball_velocity_reward': ball_velocity_reward, 'goal_reward': goal_reward,
-                'ball_goal_distance': ball_goal_distance
+                'ball_goal_distance': ball_goal_distance, 'is_success': True if goal_reward > 0 else False
                 }
         if self.gui:
             print(info)
@@ -150,7 +150,7 @@ class KickBall(gym.Env):
         self.friction = self.sim_config.ground_lateral_friction
         self.max_torque = self.robot_config.max_torque
         self.max_velo = self.robot_config.max_torque
-        print('friction factor:',self.friction,'maxtorque:',self.max_torque,'maxvelo',self.max_velo)
+        # print('friction factor:',self.friction,'maxtorque:',self.max_torque,'maxvelo',self.max_velo)
         #########################################   dynamics randomization   ##################################
         '''reset ground'''
         p.changeDynamics(bodyUniqueId=self.planeID, linkIndex=-1, lateralFriction=self.friction,
@@ -171,11 +171,11 @@ class KickBall(gym.Env):
         # p.setCollisionFilterPair(self.robotID, self.robotID, 17, 19, 0)
 
         '''reset goal. position x:[2, 3), y:[-1, 1)'''
-        # self.goal_pos = np.random.random(2)
-        # self.goal_pos[0] += 2
-        # self.goal_pos[1] *= 2
-        # self.goal_pos[1] -= 1
-        self.goal_pos = np.array([2, 0])
+        self.goal_pos = np.random.random(2)
+        self.goal_pos[0] += 2
+        self.goal_pos[1] *= 2
+        self.goal_pos[1] -= 1
+        # self.goal_pos = np.array([2, 0])
         p.resetBasePositionAndOrientation(self.goalID, self.goal_pos.tolist()+[0], self.StartOrientation)
 
         '''compute initial observation'''
@@ -198,7 +198,7 @@ class KickBall(gym.Env):
         foot = 1 if in contact with ground, otherwise 0
         body = 0 if in contact with ground, otherwise 1
         """
-        clp = p.getClosestPoints(self.robotID, self.planeId, 1e-4)
+        clp = p.getClosestPoints(self.robotID, self.planeID, 1e-4)
         links = [c[3] for c in clp]
         # feet 1357, back -1
         foot = 0 # foot - ground
