@@ -28,7 +28,7 @@ model.save('./models/PPO_random_goal.zip')
 eval_env = gym.make('KickBall-v0', connect_GUI=True)
 while True:
     obs = eval_env.reset()
-    for i in range(3 * robot_config.control_freq):
+    while True:
         action, _state = model.predict(obs, deterministic=True)
         obs, reward, done, info = eval_env.step(action)
         if done:

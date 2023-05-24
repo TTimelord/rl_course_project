@@ -40,6 +40,8 @@ Documentation: https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2Sedq
         可用来测试URDF以及仿真环境数据读取
     - `train.py`\
         使用stable-baselines3来进行RL训练
+    - `test.py`\
+        测试训练出来的RL模型
     - `config.py`\
         存放机器人和仿真环境的参数
 

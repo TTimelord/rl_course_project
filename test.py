@@ -17,8 +17,8 @@ model = PPO.load('models/PPO_random_goal.zip', print_system_info=True)
 # evaluate_policy(model, eval_env, n_eval_episodes=10)
 while True:
     obs = eval_env.reset()
-    time.sleep(1.)
-    for i in range(3 * robot_config.control_freq):
+    time.sleep(0.5)
+    while True:
         action, _state = model.predict(obs, deterministic=True)
         obs, reward, done, info = eval_env.step(action)
         time.sleep(1./robot_config.control_freq)
