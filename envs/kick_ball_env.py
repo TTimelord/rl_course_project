@@ -94,11 +94,13 @@ class KickBall(gym.Env):
         #          foot_contact_reward + body_contact_reward + nojump_reward
 
         reward = ball_velocity_reward + goal_reward
-        info = {'ori_reward': ori_reward, 'height_reward': height_reward,
+        info = {
+                # 'ori_reward': ori_reward, 'height_reward': height_reward,
                 # 'omega_reward': omega_reward, 'torq_regu': joint_torq_regu_reward,
                 # 'velo_regu': joint_velo_regu_reward, 'no_jump': nojump_reward,
                 # 'foot_contact': foot_contact_reward, 'body_contact': body_contact_reward,
-                'ball_velocity_reward': ball_velocity_reward, 'goal_reward': goal_reward
+                'ball_velocity_reward': ball_velocity_reward, 'goal_reward': goal_reward,
+                'ball_goal_distance': ball_goal_distance
                 }
         if self.gui:
             print(info)
@@ -223,7 +225,7 @@ class KickBall(gym.Env):
         omega = get_omega_imu(q,omega).tolist()  # imu omega
 
         '''ball'''
-        ball_pos = list(p.getBasePositionAndOrientation(self.robotID)[0])
+        ball_pos = list(p.getBasePositionAndOrientation(self.ballID)[0])
         ball_velocity = list(p.getBaseVelocity(self.ballID)[0])
 
         '''goal'''
