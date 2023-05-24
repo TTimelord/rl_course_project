@@ -2,7 +2,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 import os
 import numpy as np
 
-class AUtoSaveCallback(BaseCallback):
+class AutoSaveCallback(BaseCallback):
     """
     Callback for saving a model (the check is done every ``check_freq`` steps)
     based on the training reward (in practice, we recommend using ``EvalCallback``).
@@ -14,7 +14,7 @@ class AUtoSaveCallback(BaseCallback):
     """
 
     def __init__(self, check_freq, save_model_dir, verbose=1):
-        super(AUtoSaveCallback, self).__init__(verbose)
+        super(AutoSaveCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.save_path = os.path.join(save_model_dir, 'auto_save/')
         self.best_mean_reward = -np.inf
