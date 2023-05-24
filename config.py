@@ -3,7 +3,7 @@ from math import pi
 class RobotConfig(object):
     urdf_path = r'assets/thmos_urdf_mix/urdf/thmos_mix.urdf'
     center_height = 0.435521
-    control_freq = 50 # control frequency 50 Hz
+    control_freq = 30 # control frequency 50 Hz
     lower_joints = [-0.4, -2.0, -0.2, -0.1, -pi / 2.5, -0.5,  # left leg
                     0, 0, -pi, -1.6, 0, -pi, -1.6, -2.5,  # head & arm
                     -0.4, -1.8, -0.2, -1.9, -pi / 2.5, -0.5,  # right leg
@@ -18,7 +18,7 @@ class RobotConfig(object):
 
 
 class SimulationConfig(object):
-    simulation_freq = 500 # simulation frequency 500 Hz
+    simulation_freq = 240 # simulation frequency 500 Hz
 
     # ground
     ground_lateral_friction = 1.0
