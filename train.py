@@ -12,10 +12,10 @@ robot_config = RobotConfig()
 n_procs = 10
 train_env = make_vec_env('KickBall-v0', n_envs=n_procs, vec_env_cls=SubprocVecEnv, vec_env_kwargs=dict(start_method='fork'))
 model = A2C("MlpPolicy", train_env, verbose=1, tensorboard_log="./logs/")
-model.learn(total_timesteps=1000, tb_log_name="first_run")
+model.learn(total_timesteps=100000, tb_log_name="test_run")
 
 # save trained agent
-model.save('./models/A2C_first_run.zip')
+model.save('./models/A2C_test_run.zip')
 
 # evaluation with GUI
 eval_env = gym.make('KickBall-v0', connect_GUI=True)

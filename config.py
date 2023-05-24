@@ -28,4 +28,5 @@ class SimulationConfig(object):
 
     # ball
 
-    # 
+    # goal
+    goal_radius = 0.3

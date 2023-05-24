@@ -29,6 +29,8 @@ Documentation: https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2Sedq
         踢球的环境，目前会加载机器人以及足球
             > 变量含义：
             > - `qpos`和`qvel`：机器人关节位置和速度
+            > - `goal_pos`: 球门的位置
+            > - `pos`: 机器人身体位置
 
     - `logs/` \
         tensorboard logs

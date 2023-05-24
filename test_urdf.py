@@ -81,6 +81,15 @@ ballID = p.loadURDF("soccerball.urdf",[0.5,0,1], globalScaling=0.14)
 p.changeDynamics(ballID,-1, mass=0.25, linearDamping=0, angularDamping=0, rollingFriction=0.001, spinningFriction=0.001, restitution=0.5)
 p.changeVisualShape(ballID,-1,rgbaColor=[0.8,0.8,0.8,1])
 
+# goal
+goal_pos = np.random.random(2)
+goal_pos[0] += 2
+goal_pos[1] *= 2
+goal_pos[1] -= 1
+
+goalShapeID = p.createVisualShape(p.GEOM_CYLINDER, radius=sim_config.goal_radius, length=0.02, rgbaColor=[0.1,0.9,0.1,0.7])
+goalID = p.createMultiBody(baseVisualShapeIndex=goalShapeID, basePosition=goal_pos.tolist()+[0])
+
 # test in real time
 p.setRealTimeSimulation(1)
 for i in range(3600 * sim_config.simulation_freq):
@@ -89,6 +98,6 @@ for i in range(3600 * sim_config.simulation_freq):
     for j in range(n_joints):
         set_pos(robotID,j,p.readUserDebugParameter(para_ids[j]))
     cubePos, cubeOrn = p.getBasePositionAndOrientation(robotID)
-    print(cubePos[-1], p.getEulerFromQuaternion(cubeOrn))
+    print(cubePos, p.getEulerFromQuaternion(cubeOrn))
 
 p.disconnect()
