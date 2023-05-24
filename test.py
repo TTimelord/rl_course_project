@@ -1,7 +1,6 @@
 import gym
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
-from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.evaluation import evaluate_policy
 from config import RobotConfig
 import envs
 import time
@@ -12,14 +11,15 @@ eval_env = gym.make('KickBall-v0', connect_GUI=True)
 # model = PPO("MlpPolicy", eval_env, verbose=1, tensorboard_log="./logs/")
 
 # load trained agent
-model = PPO.load('./models/PPO_test_run.zip')
+model = PPO.load('models/PPO_naive_kick.zip', print_system_info=True)
 
 # evaluation with GUI
+# evaluate_policy(model, eval_env, n_eval_episodes=10)
 while True:
     obs = eval_env.reset()
+    time.sleep(1.)
     for i in range(5 * robot_config.control_freq):
         action, _state = model.predict(obs, deterministic=True)
         obs, reward, done, info = eval_env.step(action)
-        eval_env.render("human")
         time.sleep(1./robot_config.control_freq)
         print(reward)

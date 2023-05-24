@@ -55,6 +55,32 @@ class KickBall(gym.Env):
             ([0, 0, 0.435521], [0] * 2 + [0] + [0] * 2 + [0] + [0] * 14, [0, 0, 0]),  # standing
         ]
 
+        '''initialize simulation'''
+        p.resetSimulation()
+        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 0)
+        if self.gui:
+            p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+        p.setGravity(0, 0, -9.81)
+        p.setPhysicsEngineParameter(fixedTimeStep= 1./self.sim_config.simulation_freq)
+
+        '''load plane'''
+        self.planeID = p.loadURDF("plane.urdf", useFixedBase=True)
+        
+        '''load football'''
+        self.ballID = p.loadURDF("soccerball.urdf", [1, 0, 0.5], globalScaling=0.14)
+        p.changeDynamics(self.ballID,-1, mass=0.25, linearDamping=0, angularDamping=0, rollingFriction=0.001, spinningFriction=0.001, restitution=0.5)
+        p.changeVisualShape(self.ballID,-1,rgbaColor=[0.8,0.8,0.8,1])
+
+        '''load robot'''
+        self.robotID = p.loadURDF(self.robot_config.urdf_path, [0,0,self.robot_config.center_height+0.5],
+                                flags = p.URDF_MERGE_FIXED_LINKS|p.URDF_USE_SELF_COLLISION|p.URDF_USE_INERTIA_FROM_FILE|p.URDF_MAINTAIN_LINK_ORDER)
+        self.StartPos, self.rst_qpos,rpy_ini = self.initial_configuration[0]
+        self.StartOrientation = p.getQuaternionFromEuler(rpy_ini)
+
+        '''load goal'''
+        goalShapeID = p.createVisualShape(p.GEOM_CYLINDER, radius=self.sim_config.goal_radius, length=0.02, rgbaColor=[0.1,0.9,0.1,0.7])
+        self.goalID = p.createMultiBody(baseVisualShapeIndex=goalShapeID, basePosition=[2, 0, 0])  # for visualization
+
     def step(self, action):
         '''filter action and step simulation'''
         new_action = np.array(action)
@@ -73,9 +99,9 @@ class KickBall(gym.Env):
         observation = qpos + omega + grav + ball_pos_relative + ball_vel[:2] + goal_pos_relative
 
         '''compute reward'''
-        ori_reward = 0.333 * rbf_reward(grav, [0, 0, -1], -1.)
+        ori_reward = 1.0 * rbf_reward(grav, [0, 0, -1], -1.)
         height = pos[2]
-        height_reward = 0.667 * rbf_reward(height, self.robot_config.center_height * 0.999, -1.)
+        height_reward = 1.0 * rbf_reward(height, self.robot_config.center_height * 0.999, -10.)
         # omega_reward = 0.067 * rbf_reward(omega, [0, 0, 0], -0.05)
         # joint_torq_regu_reward = 0.067 * rbf_reward(torq, 0, -0.5)
         # joint_velo_regu_reward = 0.067 * rbf_reward(qvel, 0, -0.05)
@@ -95,7 +121,7 @@ class KickBall(gym.Env):
 
         reward = ball_velocity_reward + goal_reward
         info = {
-                # 'ori_reward': ori_reward, 'height_reward': height_reward,
+                'ori_reward': ori_reward, 'height_reward': height_reward,
                 # 'omega_reward': omega_reward, 'torq_regu': joint_torq_regu_reward,
                 # 'velo_regu': joint_velo_regu_reward, 'no_jump': nojump_reward,
                 # 'foot_contact': foot_contact_reward, 'body_contact': body_contact_reward,
@@ -118,14 +144,6 @@ class KickBall(gym.Env):
             np.random.seed(seed)
             random.seed(seed)
 
-        '''initialize simulation'''
-        p.resetSimulation()
-        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 0)
-        if self.gui:
-            p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
-        p.setGravity(0, 0, -9.81)
-        p.setPhysicsEngineParameter(fixedTimeStep= 1./self.sim_config.simulation_freq)
-
         self.simstep_cnt = 0
 
         '''parameters for dynamics'''
@@ -134,25 +152,17 @@ class KickBall(gym.Env):
         self.max_velo = self.robot_config.max_torque
         print('friction factor:',self.friction,'maxtorque:',self.max_torque,'maxvelo',self.max_velo)
         #########################################   dynamics randomization   ##################################
-        '''load ground'''
-        planeID = p.loadURDF("plane.urdf", useFixedBase=True)
-        self.planeId = planeID
-        p.changeDynamics(bodyUniqueId=planeID, linkIndex=-1, lateralFriction=self.friction,
+        '''reset ground'''
+        p.changeDynamics(bodyUniqueId=self.planeID, linkIndex=-1, lateralFriction=self.friction,
                          rollingFriction=self.sim_config.ground_rolling_friction, spinningFriction=self.sim_config.ground_spinning_friction, restitution=self.sim_config.ground_restitution)
 
-        '''load football'''
-        self.ballID = p.loadURDF("soccerball.urdf",[0.2,0,0.07], globalScaling=0.14)
-        p.changeDynamics(self.ballID,-1, mass=0.25, linearDamping=0, angularDamping=0, rollingFriction=0.001, spinningFriction=0.001, restitution=0.5)
-        p.changeVisualShape(self.ballID,-1,rgbaColor=[0.8,0.8,0.8,1])
+        '''reset ball'''
+        p.resetBasePositionAndOrientation(self.ballID, [0.2,0,0.07], self.StartOrientation)
 
-        '''load robot'''
-        self.StartPos, rst_qpos,rpy_ini = self.initial_configuration[0]
-        self.StartOrientation = p.getQuaternionFromEuler(rpy_ini)
-        self.robotID = p.loadURDF(self.robot_config.urdf_path, [0,0,self.robot_config.center_height+0.5], self.StartOrientation,
-                                flags = p.URDF_MERGE_FIXED_LINKS|p.URDF_USE_SELF_COLLISION|p.URDF_USE_INERTIA_FROM_FILE|p.URDF_MAINTAIN_LINK_ORDER)
+        '''reset robot'''
         p.resetBasePositionAndOrientation(self.robotID, self.StartPos, self.StartOrientation)
         for i in range(20):
-            p.resetJointState(self.robotID,i,rst_qpos[i])
+            p.resetJointState(self.robotID,i,self.rst_qpos[i])
         
         # filter collision
         # p.setCollisionFilterPair(self.robotID, self.robotID, -1, 15, 0)
@@ -160,14 +170,13 @@ class KickBall(gym.Env):
         # p.setCollisionFilterPair(self.robotID, self.robotID, 11, 13, 0)
         # p.setCollisionFilterPair(self.robotID, self.robotID, 17, 19, 0)
 
-        '''initialize goal. position x:[2, 3), y:[-1, 1)'''
+        '''reset goal. position x:[2, 3), y:[-1, 1)'''
         # self.goal_pos = np.random.random(2)
         # self.goal_pos[0] += 2
         # self.goal_pos[1] *= 2
         # self.goal_pos[1] -= 1
         self.goal_pos = np.array([2, 0])
-        goalShapeID = p.createVisualShape(p.GEOM_CYLINDER, radius=self.sim_config.goal_radius, length=0.02, rgbaColor=[0.1,0.9,0.1,0.7])
-        goalID = p.createMultiBody(baseVisualShapeIndex=goalShapeID, basePosition=self.goal_pos.tolist()+[0])  # for visualization
+        p.resetBasePositionAndOrientation(self.goalID, self.goal_pos.tolist()+[0], self.StartOrientation)
 
         '''compute initial observation'''
         pos, qpos, qvel, omega, grav, react, torq, ball_pos, ball_vel, goal_pos = self.get_state()
