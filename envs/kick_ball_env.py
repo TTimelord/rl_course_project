@@ -4,29 +4,10 @@ import pybullet as p
 import pybullet_data
 from math import pi
 import numpy as np
-from scipy.spatial.transform import Rotation
 import time
 import random
 from config import RobotConfig, SimulationConfig
-
-
-def get_omega_imu(q, omega):
-    rot_ = Rotation.from_quat(q)
-    mat_ = rot_.as_matrix()
-    vec_ = np.dot(np.transpose(mat_), np.array([[x] for x in omega]))
-    return np.reshape(vec_,(-1,))
-
-def get_gravity_vec(q):
-    rot_ = Rotation.from_quat(q)
-    mat_ = rot_.as_matrix()
-    vec_ = np.dot(np.transpose(mat_), np.array([[0.], [0.], [-1.]]))
-    out_ = np.reshape(vec_, (-1,))
-    return out_
-
-def rbf_reward(x,xhat,alpha):
-    x = np.array(x)
-    xhat = np.array(xhat)
-    return np.exp(alpha * np.sum(np.square(x-xhat)))
+from utils import get_gravity_vec, get_omega_imu, rbf_reward
 
 class KickBall(gym.Env):
     metadata = {'render.modes': ['human']}

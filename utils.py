@@ -1,6 +1,25 @@
 from stable_baselines3.common.callbacks import BaseCallback
 import os
 import numpy as np
+from scipy.spatial.transform import Rotation
+
+def get_omega_imu(q, omega):
+    rot_ = Rotation.from_quat(q)
+    mat_ = rot_.as_matrix()
+    vec_ = np.dot(np.transpose(mat_), np.array([[x] for x in omega]))
+    return np.reshape(vec_,(-1,))
+
+def get_gravity_vec(q):
+    rot_ = Rotation.from_quat(q)
+    mat_ = rot_.as_matrix()
+    vec_ = np.dot(np.transpose(mat_), np.array([[0.], [0.], [-1.]]))
+    out_ = np.reshape(vec_, (-1,))
+    return out_
+
+def rbf_reward(x,xhat,alpha):
+    x = np.array(x)
+    xhat = np.array(xhat)
+    return np.exp(alpha * np.sum(np.square(x-xhat)))
 
 class AutoSaveCallback(BaseCallback):
     """
