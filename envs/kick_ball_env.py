@@ -94,7 +94,7 @@ class KickBall(gym.Env):
                 time.sleep(1/600.)  # slow down
 
         '''compute observation'''
-        pos, qpos, qvel, omega, grav, react, torq, ball_pos, ball_vel, goal_pos = self.get_state()
+        pos, vel, omega, grav, qpos, qvel, react, torq, ball_pos, ball_vel, goal_pos = self.get_state()
         ball_pos_relative, goal_pos_relative = self.compute_relative_pos(pos, ball_pos, goal_pos)
         observation = qpos + omega + grav + ball_pos_relative + ball_vel[:2] + goal_pos_relative
 
@@ -179,7 +179,7 @@ class KickBall(gym.Env):
         p.resetBasePositionAndOrientation(self.goalID, self.goal_pos.tolist()+[0], self.StartOrientation)
 
         '''compute initial observation'''
-        pos, qpos, qvel, omega, grav, react, torq, ball_pos, ball_vel, goal_pos = self.get_state()
+        pos, vel, omega, grav, qpos, qvel, react, torq, ball_pos, ball_vel, goal_pos = self.get_state()
         self.last_action = np.array(qpos)
         ball_pos_relative, goal_pos_relative = self.compute_relative_pos(pos, ball_pos, goal_pos)
         observation = qpos + omega + grav + ball_pos_relative + ball_vel[:2] + goal_pos_relative
@@ -223,15 +223,16 @@ class KickBall(gym.Env):
 
     def get_state(self):
         '''robot'''
+        pos, q = p.getBasePositionAndOrientation(self.robotID)
+        vel = list(p.getBaseVelocity(self.robotID)[0])
+        omega = list(p.getBaseVelocity(self.robotID)[1])  # base omega
+        grav = get_gravity_vec(q).tolist()
+        omega = get_omega_imu(q,omega).tolist()  # imu omega
         states = p.getJointStates(self.robotID, [x for x in range(20)])
         qpos = [s[0] for s in states]
         qvel = [s[1] for s in states]
         react = [s[2] for s in states]
         torq = [s[3] for s in states]
-        omega = list(p.getBaseVelocity(self.robotID)[1])  # base omega
-        pos, q = p.getBasePositionAndOrientation(self.robotID)
-        grav = get_gravity_vec(q).tolist()
-        omega = get_omega_imu(q,omega).tolist()  # imu omega
 
         '''ball'''
         ball_pos = list(p.getBasePositionAndOrientation(self.ballID)[0])
@@ -240,7 +241,7 @@ class KickBall(gym.Env):
         '''goal'''
         goal_pos = self.goal_pos.tolist()
         
-        return pos, qpos, qvel, omega, grav, react, torq, ball_pos, ball_velocity, goal_pos
+        return pos, vel, omega, grav, qpos, qvel, react, torq, ball_pos, ball_velocity, goal_pos
     
     def compute_relative_pos(self, pos, ball_pos, goal_pos):
         """
@@ -253,13 +254,13 @@ class KickBall(gym.Env):
         goal_pos_relative = goal_pos - pos
         return ball_pos_relative.tolist(), goal_pos_relative.tolist()
     
-    def compute_relative_velocity(self, ball_vel, ball_pos, goal_pos):
+    def compute_relative_velocity(self, vel, pos, goal_pos):
         """
         compute relative velocity towards goal
         """
-        ball_vel = np.array(ball_vel)[:2]
-        ball_pos = np.array(ball_pos)[:2]
+        vel = np.array(vel)[:2]
+        pos = np.array(pos)[:2]
         goal_pos = np.array(goal_pos)[:2]
-        relative_pos = goal_pos - ball_pos
-        ball_vel_relative = np.dot(ball_vel, relative_pos)/np.linalg.norm(relative_pos)
-        return ball_vel_relative
+        relative_pos = goal_pos - pos
+        vel_relative = np.dot(vel, relative_pos)/np.linalg.norm(relative_pos)
+        return vel_relative
