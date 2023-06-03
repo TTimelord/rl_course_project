@@ -49,7 +49,7 @@ p.setAdditionalSearchPath(pybullet_data.getDataPath())  # optionally
 planeId = reset_sim()
 mos_height = 0.435521
 # StartPos,q = ([0, 0, mos_height], [0, 0, 0]) # stand
-StartPos, rst_pos, q = ([0, 0, 0.435521], [0] * 2 + [0] + [0] * 2 + [0] + [0] * 14, [0, 0, 0])
+StartPos, rst_pos, q = ([0, 0, 0.435521], [0] *6 + [0,0]+[0.8,1,2,-0.8,-1,-2] + [0] * 6, [0, 0, 0])
 StartOrientation = p.getQuaternionFromEuler(q)
 robotID = p.loadURDF(robot_config.urdf_path, [0,0,mos_height+0.5], StartOrientation,
                     flags = p.URDF_MERGE_FIXED_LINKS|p.URDF_USE_SELF_COLLISION|p.URDF_USE_INERTIA_FROM_FILE)
@@ -96,7 +96,9 @@ for i in range(3600 * sim_config.simulation_freq):
     # p.stepSimulation()
     time.sleep(1./sim_config.simulation_freq)
     for j in range(n_joints):
-        set_pos(robotID,j,p.readUserDebugParameter(para_ids[j]))
+        set_pos(robotID,j,rst_pos[j])
+                # p.readUserDebugParameter(para_ids[j]))
+        
     cubePos, cubeOrn = p.getBasePositionAndOrientation(robotID)
     print(cubePos, p.getEulerFromQuaternion(cubeOrn))
 

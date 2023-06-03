@@ -6,12 +6,12 @@ import envs
 import time
 
 robot_config = RobotConfig()
-eval_env = gym.make('KickBall-v0', connect_GUI=True)
+eval_env = gym.make('KickBall57-v0', connect_GUI=True)
 
 # model = PPO("MlpPolicy", eval_env, verbose=1, tensorboard_log="./logs/")
 
 # load trained agent
-model = PPO.load('models/PPO_random_goal.zip', print_system_info=True)
+model = PPO.load('models/kick_stand.zip', print_system_info=True)
 
 # evaluation with GUI
 # evaluate_policy(model, eval_env, n_eval_episodes=10)
