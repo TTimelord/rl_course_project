@@ -18,7 +18,7 @@ policy_kwargs = dict(activation_fn=torch.nn.ReLU,
 model = PPO("MlpPolicy", train_env, verbose=1, tensorboard_log="./logs/", learning_rate=1e-4, 
             gae_lambda=0.8, gamma=0.99, batch_size=32, n_epochs=5, policy_kwargs=policy_kwargs)
 print(model.policy)
-autosave_callback = AutoSaveCallback(100000//n_procs, './models')
+autosave_callback = AutoSaveCallback(1e5, './models')
 model.learn(total_timesteps=1e6, tb_log_name="test_run", callback=autosave_callback)
 
 # save trained agent
