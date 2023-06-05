@@ -18,6 +18,7 @@ class KickBall(gym.Env):
         self.sim_config = SimulationConfig()
         self.sim_per_control = self.sim_config.simulation_freq // self.robot_config.control_freq
         self.mos_height = self.robot_config.center_height
+        self.hit_target = False
         if connect_GUI:
             p.connect(p.GUI)
         else:
@@ -94,7 +95,10 @@ class KickBall(gym.Env):
         # nojump_reward = 0.033 * rbf_reward(dist, 0, -100.0)
         ball_velocity_reward = self.compute_relative_velocity(ball_vel, ball_pos, goal_pos)
         ball_goal_distance = np.linalg.norm(np.array(ball_pos)[:2] - np.array(goal_pos), ord=2)
-        goal_reward = 1000 if ball_goal_distance < self.sim_config.goal_radius else 0
+        goal_reward = 0
+        if ball_goal_distance < self.sim_config.goal_radius:
+            self.hit_target = True
+            goal_reward = 1000 
 
         # reward = ori_reward + height_reward + omega_reward + \
         #          joint_torq_regu_reward + joint_velo_regu_reward + \
@@ -112,7 +116,7 @@ class KickBall(gym.Env):
         if self.gui:
             print(info)
 
-        if self.simstep_cnt > 5*self.sim_config.simulation_freq or goal_reward > 0:
+        if self.simstep_cnt > 5*self.sim_config.simulation_freq or self.hit_target:
             done = True
         else:
             done = False
@@ -165,6 +169,7 @@ class KickBall(gym.Env):
         ball_pos_relative, goal_pos_relative = self.compute_relative_pos(pos, ball_pos, goal_pos)
         observation = qpos + omega + grav + ball_pos_relative + ball_vel[:2] + goal_pos_relative
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1)
+        self.hit_target = False
         return observation
 
     def render(self, mode='human'):
