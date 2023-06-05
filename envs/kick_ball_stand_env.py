@@ -7,16 +7,17 @@ import numpy as np
 import time
 import random
 from config import RobotConfig, SimulationConfig
-from kick_ball_env import KickBall
+from envs.kick_ball_env import KickBall
 from utils import get_gravity_vec, get_omega_imu, rbf_reward
 
 class KickBallStand(KickBall):
     def __init__(self, connect_GUI=False):
-        super(KickBall, self).__init__(connect_GUI)
+        super(KickBallStand, self).__init__(connect_GUI)
         self.initial_configuration = [
             ([0, 0, 0.415521], [ 0,0,0.8,-0.8,0,0,0,0,0,0, 0,1.5,2,-1.5,-2,0,0,0,0,0], [0, 0, 0]),  # standing
             # ([0, 0, 0.435521], [0] *6 + [0,0]+[0]*6 + [0] * 6, [0, 0, 0]),  # standing
         ]
+        self.StartPos, self.rst_qpos,rpy_ini = self.initial_configuration[0]
     
     def step(self, action):
         '''filter action and step simulation'''
