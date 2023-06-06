@@ -13,19 +13,13 @@ from utils import get_gravity_vec, get_omega_imu, rbf_reward
 class KickBallStand(KickBall):
     def __init__(self, connect_GUI=False):
         super(KickBallStand, self).__init__(connect_GUI)
-        self.initial_configuration = [
-            ([0, 0, 0.415521], [ 0,0,0.8,-0.8,0,0,0,0,0,0, 0,1.5,2,-1.5,-2,0,0,0,0,0], [0, 0, 0]),  # standing
-            # ([0, 0, 0.435521], [0] *6 + [0,0]+[0]*6 + [0] * 6, [0, 0, 0]),  # standing
-        ]
-        self.StartPos, self.rst_qpos,rpy_ini = self.initial_configuration[0]
     
     def step(self, action):
         '''filter action and step simulation'''
-        action=[action[i] + self.rst_qpos[i] for i in range(20)]
-        new_action = np.array(action)
+        new_action = np.array(action) + np.array(self.rst_qpos)
         real_action = self.robot_config.lpf_ratio * new_action + (1 - self.robot_config.lpf_ratio) * self.last_action
         self.last_action = real_action
-        self.set_qpos_all(self.last_action)
+        self.set_qpos_all(real_action)
         for s in range(self.sim_per_control):
             p.stepSimulation()
             self.simstep_cnt += 1

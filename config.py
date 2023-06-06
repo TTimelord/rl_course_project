@@ -12,6 +12,10 @@ class RobotConfig(object):
                     0, 0, pi, 1.6, 2.5, pi, 1.6, 0,
                     0.4, 2.0, 0.2, 0.1, pi / 2.5, 0.5,
                     ]
+    initial_configurations = [
+                                ([0, 0, 0.435521], [0] * 2 + [0] + [0] * 2 + [0] + [0] * 14, [0, 0, 0]),  # T-pose
+                                ([0, 0, 0.415521], [ 0,0,0.8,-0.8,0,0,0,0,0,0, 0,1.5,2,-1.5,-2,0,0,0,0,0], [0, 0, 0]),  # standing
+                             ]  # xyz, qpos, orientation
     max_torque = 7.0
     max_velocity = 7.0
     lpf_ratio = 0.2 # low pass filter ratio 

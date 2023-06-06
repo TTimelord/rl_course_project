@@ -27,15 +27,18 @@ class KickBall(gym.Env):
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=70, cameraPitch=-60,
                                  cameraTargetPosition=[2,-0.5,0.2])
+        
+        self.StartPos, self.rst_qpos, rpy_ini = self.robot_config.initial_configurations[1]  # using default standing pose
+        self.StartOrientation = p.getQuaternionFromEuler(rpy_ini)
         lower_joints = self.robot_config.lower_joints
         upper_joints = self.robot_config.upper_joints
-        self.action_space = spaces.Box(low=np.array(lower_joints), high=np.array(upper_joints))
+        action_lower_joints = np.array(lower_joints) - np.array(self.rst_qpos)
+        action_upper_joints = np.array(upper_joints) - np.array(self.rst_qpos)
+
+        self.action_space = spaces.Box(low=np.array(action_lower_joints), high=np.array(action_upper_joints))
         self.observation_space = spaces.Box(low=np.array(lower_joints  + [-10]*3+[-1]*3 + [-3]*6),  # joints, omega, grav, ball_pos, ball_vel, goal_pos
                                             high=np.array(upper_joints + [10]*3 + [1]*3 + [3]*6))
 
-        self.initial_configuration = [
-            ([0, 0, 0.435521], [0] * 2 + [0] + [0] * 2 + [0] + [0] * 14, [0, 0, 0]),  # standing
-        ]
 
         '''initialize simulation'''
         p.resetSimulation()
@@ -56,8 +59,6 @@ class KickBall(gym.Env):
         '''load robot'''
         self.robotID = p.loadURDF(self.robot_config.urdf_path, [0,0,self.robot_config.center_height+0.5],
                                 flags = p.URDF_MERGE_FIXED_LINKS|p.URDF_USE_SELF_COLLISION|p.URDF_USE_INERTIA_FROM_FILE|p.URDF_MAINTAIN_LINK_ORDER)
-        self.StartPos, self.rst_qpos,rpy_ini = self.initial_configuration[0]
-        self.StartOrientation = p.getQuaternionFromEuler(rpy_ini)
 
         '''load goal'''
         goalShapeID = p.createVisualShape(p.GEOM_CYLINDER, radius=self.sim_config.goal_radius, length=0.02, rgbaColor=[0.1,0.9,0.1,0.7])
@@ -65,7 +66,7 @@ class KickBall(gym.Env):
 
     def step(self, action):
         '''filter action and step simulation'''
-        new_action = np.array(action)
+        new_action = np.array(action) + np.array(self.rst_qpos)
         real_action = self.robot_config.lpf_ratio * new_action + (1 - self.robot_config.lpf_ratio) * self.last_action
         self.last_action = real_action
         self.set_qpos_all(real_action)
@@ -116,7 +117,7 @@ class KickBall(gym.Env):
         if self.gui:
             print(info)
 
-        if self.simstep_cnt > 5*self.sim_config.simulation_freq or self.hit_target:
+        if self.simstep_cnt > 3*self.sim_config.simulation_freq or self.hit_target:
             done = True
         else:
             done = False
