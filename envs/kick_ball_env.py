@@ -134,7 +134,7 @@ class KickBall(gym.Env):
         '''parameters for dynamics'''
         self.friction = self.sim_config.ground_lateral_friction
         self.max_torque = self.robot_config.max_torque
-        self.max_velo = self.robot_config.max_torque
+        self.max_velo = self.robot_config.max_velocity
         # print('friction factor:',self.friction,'maxtorque:',self.max_torque,'maxvelo',self.max_velo)
         #########################################   dynamics randomization   ##################################
         '''reset ground'''
