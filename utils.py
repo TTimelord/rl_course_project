@@ -32,9 +32,10 @@ class AutoSaveCallback(BaseCallback):
     :param verbose: (int)
     """
 
-    def __init__(self, check_freq, save_model_dir, verbose=1):
+    def __init__(self, check_freq, n_procs, save_model_dir, verbose=1):
         super(AutoSaveCallback, self).__init__(verbose)
         self.check_freq = check_freq
+        self.n_procs = n_procs
         self.save_path = os.path.join(save_model_dir, 'auto_save/')
         self.best_mean_reward = -np.inf
 
@@ -46,9 +47,9 @@ class AutoSaveCallback(BaseCallback):
 
     # def _on_step(self) -> bool:
     def _on_step(self):
-        if self.n_calls % self.check_freq == 0:
+        if self.n_calls * self.n_procs % self.check_freq == 0:
             print('self.n_calls: ',self.n_calls)
-            model_path1 = os.path.join(self.save_path, 'model_{}'.format(self.n_calls))
+            model_path1 = os.path.join(self.save_path, 'model_{}'.format(self.n_calls * self.n_procs))
             self.model.save(model_path1)
 
         return True
