@@ -11,18 +11,18 @@ from utils import AutoSaveCallback
 robot_config = RobotConfig()
 
 # train the agent using multiprocessing
-n_procs = 20
+n_procs = 24
 train_env = make_vec_env('KickBall-v0', n_envs=n_procs, vec_env_cls=SubprocVecEnv, vec_env_kwargs=dict(start_method='fork'))
 policy_kwargs = dict(activation_fn=torch.nn.ReLU,
                      net_arch=dict(pi=[512, 512], vf=[512, 512]))
 model = PPO("MlpPolicy", train_env, verbose=1, tensorboard_log="./logs/", learning_rate=1e-4, 
-            gae_lambda=0.8, gamma=0.99, batch_size=32, n_epochs=5, policy_kwargs=policy_kwargs)
+            n_steps=1024, gae_lambda=0.8, gamma=0.99, batch_size=128, n_epochs=5, policy_kwargs=policy_kwargs)
 print(model.policy)
 autosave_callback = AutoSaveCallback(100000, n_procs, './models')
-model.learn(total_timesteps=1e6, tb_log_name="test_run", callback=autosave_callback)
+model.learn(total_timesteps=1e6, tb_log_name="kick", callback=autosave_callback)
 
 # save trained agent
-model.save('./models/PPO_random_goal.zip')
+model.save('./models/PPO_kick.zip')
 
 # evaluation with GUI
 eval_env = gym.make('KickBall-v0', connect_GUI=True)
