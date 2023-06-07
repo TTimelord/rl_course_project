@@ -12,21 +12,20 @@ from envs.kick_ball_env import KickBall
 class KickBallImitation(KickBall):
     def __init__(self, connect_GUI=False):
         super(KickBallImitation, self).__init__(connect_GUI)
-        self.initial_configuration = [
-            ([0, 0, 0.415521], [ 0,0,0.8,-0.8,0,0,0,0,0,0, 0,1.5,2,-1.5,-2,0,0,0,0,0], [0, 0, 0]),  # standing
-            # ([0, 0, 0.435521], [0] *6 + [0,0]+[0]*6 + [0] * 6, [0, 0, 0]),  # standing
-        ]
-        self.StartPos, self.rst_qpos,rpy_ini = self.initial_configuration[0]
         self.back_swing = False  # leg swing back flag
+        self.touch_ball_with_correct_foot = False
     
     def step(self, action):
         '''filter action and step simulation'''
-        new_action = np.array(action)
+        new_action = np.array(action) + np.array(self.rst_qpos)
         real_action = self.robot_config.lpf_ratio * new_action + (1 - self.robot_config.lpf_ratio) * self.last_action
         self.last_action = real_action
         self.set_qpos_all(real_action)
+        collision_buffer=[]
         for s in range(self.sim_per_control):
             p.stepSimulation()
+            collision_buffer += p.getContactPoints(bodyA=self.robotID, bodyB=self.ballID) + \
+                                p.getContactPoints(bodyA=self.robotID, bodyB=self.ballID)
             self.simstep_cnt += 1
             if self.gui:
                 time.sleep(1/600.)  # slow down
@@ -34,7 +33,8 @@ class KickBallImitation(KickBall):
         '''compute observation'''
         pos, vel, omega, grav, qpos, qvel, react, torq, ball_pos, ball_vel, goal_pos = self.get_state()
         ball_pos_relative, goal_pos_relative = self.compute_relative_pos(pos, ball_pos, goal_pos)
-        observation = qpos + omega + grav + ball_pos_relative + ball_vel[:2] + goal_pos_relative
+        observation = qpos + self.qpos_buffer + omega + grav + ball_pos_relative + ball_vel[:2] + goal_pos_relative
+        self.qpos_buffer = qpos
 
         '''compute reward'''
         # ori_reward = 1.0 * rbf_reward(grav, [0, 0, -1], -1.)
@@ -46,15 +46,6 @@ class KickBallImitation(KickBall):
         # else:
         #     height_reward = 3*np.log((0.3-0.29999)/0.1)
 
-        ball_velocity_reward = self.compute_relative_velocity(ball_vel, ball_pos, goal_pos)
-        ball_goal_distance = np.linalg.norm(np.array(ball_pos)[:2] - np.array(goal_pos), ord=2)
-        goal_reward = 0
-        if ball_goal_distance < self.sim_config.goal_radius:
-            self.hit_target = True
-            goal_reward = 1000 
-            
-        termination = height < 0.33#0.3
-
         '''back swing'''
         back_swing_reward = 0
 
@@ -65,6 +56,8 @@ class KickBallImitation(KickBall):
         
         left_foot_pos = p.getLinkState(self.robotID, 5)[0]
         right_foot_pos = p.getLinkState(self.robotID, 19)[0]
+        # left_foot_pos,_,_,_,_,_,left_foot_vel,_ = p.getLinkState(self.robotID, 5, computeLinkVelocity=1)
+        # right_foot_pos,_,_,_,_,_,right_foot_vel,_ = p.getLinkState(self.robotID, 19, computeLinkVelocity=1)
 
         back_swing_x_thresh = -0.03
         back_swing_z_thresh = 0.06
@@ -76,22 +69,50 @@ class KickBallImitation(KickBall):
             back_swing_reward = 50
             self.back_swing = True
 
+        # foot_velocity_reward = 0
+        ball_velocity_reward = 0
+        goal_reward = 0
+        if not self.touch_ball_with_correct_foot and self.back_swing:
+            # if left_foot_back_swing:
+            #     foot_velocity_reward = max(left_foot_vel[0], 0)
+            # elif right_foot_back_swing:
+            #     foot_velocity_reward = max(right_foot_vel[0], 0)
+            if collision_buffer:
+                for point in collision_buffer:
+                    if left_foot_back_swing:
+                        if point[3]==5:
+                            self.touch_ball_with_correct_foot=True
+                    elif right_foot_back_swing:
+                        if point[3]==19:
+                            self.touch_ball_with_correct_foot=True
+        collision_buffer = []
+        
+        if self.touch_ball_with_correct_foot:
+            ball_velocity_reward = self.compute_relative_velocity(ball_vel, ball_pos, goal_pos)
+
+            ball_goal_distance = np.linalg.norm(np.array(ball_pos)[:2] - np.array(goal_pos), ord=2)
+            if ball_goal_distance < self.sim_config.goal_radius:
+                self.hit_target = True
+                goal_reward = 1000 
+            
+        termination = height < 0.33 #0.3
+
         '''total reward'''
-        reward = ball_velocity_reward + goal_reward + back_swing_reward # + termination*-100
+        reward = ball_velocity_reward + goal_reward + back_swing_reward + termination*-100
         info = {
                 # 'ori_reward': ori_reward, 'height_reward': height_reward,
                 # 'omega_reward': omega_reward, 'torq_regu': joint_torq_regu_reward,
                 # 'velo_regu': joint_velo_regu_reward, 'no_jump': nojump_reward,
                 # 'foot_contact': foot_contact_reward, 'body_contact': body_contact_reward,
+                'back_swing':self.back_swing,'touch_ball':self.touch_ball_with_correct_foot,
+                'total_reward': reward,
                 'ball_velocity_reward': ball_velocity_reward, 'goal_reward': goal_reward,
-                'ball_goal_distance': ball_goal_distance, 'is_success': True if goal_reward > 0 else False,
-                'height':height, 'back_swing':self.back_swing,
-                'is_dead':termination
+                'is_success': True if self.hit_target else False,
                 }
         if self.gui:
             print(info)
 
-        if self.simstep_cnt > 3*self.sim_config.simulation_freq or self.hit_target:  # or termination:  # comment this when training kick_new
+        if self.simstep_cnt > 3*self.sim_config.simulation_freq or self.hit_target or termination:  # or termination:  # comment this when training kick_new
             done = True
         else:
             done = False
@@ -144,9 +165,11 @@ class KickBallImitation(KickBall):
         '''compute initial observation'''
         pos, vel, omega, grav, qpos, qvel, react, torq, ball_pos, ball_vel, goal_pos = self.get_state()
         self.last_action = np.array(qpos)
+        self.qpos_buffer = qpos
         ball_pos_relative, goal_pos_relative = self.compute_relative_pos(pos, ball_pos, goal_pos)
-        observation = qpos + omega + grav + ball_pos_relative + ball_vel[:2] + goal_pos_relative
+        observation = qpos + self.qpos_buffer + omega + grav + ball_pos_relative + ball_vel[:2] + goal_pos_relative
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1)
         self.hit_target = False
         self.back_swing = False
+        self.touch_ball_with_correct_foot = False
         return observation
