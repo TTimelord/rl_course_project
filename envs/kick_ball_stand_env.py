@@ -29,8 +29,9 @@ class KickBallStand(KickBall):
         '''compute observation'''
         pos, vel, omega, grav, qpos, qvel, react, torq, ball_pos, ball_vel, goal_pos = self.get_state()
         ball_pos_relative, goal_pos_relative = self.compute_relative_pos(pos, ball_pos, goal_pos)
-        observation = qpos + omega + grav + ball_pos_relative + ball_vel[:2] + goal_pos_relative
-
+        observation = qpos + self.qpos_buffer + omega + grav + ball_pos_relative + ball_vel[:2] + goal_pos_relative
+        self.qpos_buffer = qpos
+        
         '''compute reward'''
         ori_reward = 1.0 * rbf_reward(grav, [0, 0, -1], -1.)
         height = pos[2]
