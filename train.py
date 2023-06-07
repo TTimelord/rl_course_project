@@ -6,26 +6,33 @@ from config import RobotConfig
 import envs
 import time
 import torch
-from utils import AutoSaveCallback
+from stable_baselines3.common.callbacks import CheckpointCallback
 
 robot_config = RobotConfig()
 
-# train the agent using multiprocessing
+'''train parameters'''
+gym_id = 'KickBallImitation-v0'  # change the env you want to train here
 n_procs = 24
-train_env = make_vec_env('KickBall-v0', n_envs=n_procs, vec_env_cls=SubprocVecEnv, vec_env_kwargs=dict(start_method='fork'))
+train_env = make_vec_env(gym_id, n_envs=n_procs, vec_env_cls=SubprocVecEnv, vec_env_kwargs=dict(start_method='fork'))
 policy_kwargs = dict(activation_fn=torch.nn.ReLU,
                      net_arch=dict(pi=[512, 512], vf=[512, 512]))
 model = PPO("MlpPolicy", train_env, verbose=1, tensorboard_log="./logs/", learning_rate=1e-4, 
             n_steps=1024, gae_lambda=0.8, gamma=0.99, batch_size=128, n_epochs=5, policy_kwargs=policy_kwargs)
+
+'''load the previous model if you want to continue training'''
+# model = PPO.load('models/PPO_imitation.zip', print_system_info=True, env=train_env)
+
 print(model.policy)
-autosave_callback = AutoSaveCallback(100000, n_procs, './models')
-model.learn(total_timesteps=1e6, tb_log_name="kick", callback=autosave_callback)
+checkpoint_callback = CheckpointCallback(save_freq=1e6//n_procs, save_path='./models/auto_save/', name_prefix=gym_id)
 
-# save trained agent
-model.save('./models/PPO_kick.zip')
+'''training'''
+model.learn(total_timesteps=1e7, tb_log_name=gym_id, reset_num_timesteps=True, callback=checkpoint_callback)
 
-# evaluation with GUI
-eval_env = gym.make('KickBall-v0', connect_GUI=True)
+'''save trained agent'''
+model.save('./models/' + gym_id)
+
+'''evaluation with GUI'''
+eval_env = gym.make(gym_id, connect_GUI=True)
 while True:
     obs = eval_env.reset()
     while True:
