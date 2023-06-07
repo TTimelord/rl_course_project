@@ -14,6 +14,8 @@ class KickBallImitation(KickBall):
         super(KickBallImitation, self).__init__(connect_GUI)
         self.back_swing = False  # leg swing back flag
         self.touch_ball_with_correct_foot = False
+        p.resetDebugVisualizerCamera(cameraDistance=2, cameraYaw=0, cameraPitch=-30,
+                            cameraTargetPosition=[1.0,-0.0,0.1])
     
     def step(self, action):
         '''filter action and step simulation'''
@@ -54,13 +56,13 @@ class KickBallImitation(KickBall):
         if np.dot(grav, [0, 0, -1]) > np.cos(pi/6):
             upright = True
         
-        left_foot_pos = p.getLinkState(self.robotID, 5)[0]
-        right_foot_pos = p.getLinkState(self.robotID, 19)[0]
-        # left_foot_pos,_,_,_,_,_,left_foot_vel,_ = p.getLinkState(self.robotID, 5, computeLinkVelocity=1)
-        # right_foot_pos,_,_,_,_,_,right_foot_vel,_ = p.getLinkState(self.robotID, 19, computeLinkVelocity=1)
+        # left_foot_pos = p.getLinkState(self.robotID, 5)[0]
+        # right_foot_pos = p.getLinkState(self.robotID, 19)[0]
+        left_foot_pos,_,_,_,_,_,left_foot_vel,_ = p.getLinkState(self.robotID, 5, computeLinkVelocity=1)
+        right_foot_pos,_,_,_,_,_,right_foot_vel,_ = p.getLinkState(self.robotID, 19, computeLinkVelocity=1)
 
-        back_swing_x_thresh = -0.03
-        back_swing_z_thresh = 0.06
+        back_swing_x_thresh = -0.02
+        back_swing_z_thresh = 0.04
 
         left_foot_back_swing = left_foot_pos[0] - pos[0] < back_swing_x_thresh and left_foot_pos[2] > back_swing_z_thresh
         right_foot_back_swing = right_foot_pos[0] - pos[0] < back_swing_x_thresh and right_foot_pos[2] > back_swing_z_thresh
@@ -69,44 +71,47 @@ class KickBallImitation(KickBall):
             back_swing_reward = 50
             self.back_swing = True
 
-        # foot_velocity_reward = 0
+        foot_velocity_reward = 0
         ball_velocity_reward = 0
         goal_reward = 0
+        touch_reward = 0  # given once when the robot touch the ball
         if not self.touch_ball_with_correct_foot and self.back_swing:
-            # if left_foot_back_swing:
-            #     foot_velocity_reward = max(left_foot_vel[0], 0)
-            # elif right_foot_back_swing:
-            #     foot_velocity_reward = max(right_foot_vel[0], 0)
+            if left_foot_back_swing:
+                foot_velocity_reward = 5*left_foot_vel[0]
+            elif right_foot_back_swing:
+                foot_velocity_reward = 5*right_foot_vel[0]
             if collision_buffer:
                 for point in collision_buffer:
                     if left_foot_back_swing:
                         if point[3]==5:
                             self.touch_ball_with_correct_foot=True
+                            touch_reward = 50
                     elif right_foot_back_swing:
                         if point[3]==19:
                             self.touch_ball_with_correct_foot=True
+                            touch_reward = 50
         collision_buffer = []
         
         if self.touch_ball_with_correct_foot:
-            ball_velocity_reward = self.compute_relative_velocity(ball_vel, ball_pos, goal_pos)
+            ball_velocity_reward = self.compute_relative_velocity(ball_vel, ball_pos, goal_pos) * 2
 
             ball_goal_distance = np.linalg.norm(np.array(ball_pos)[:2] - np.array(goal_pos), ord=2)
             if ball_goal_distance < self.sim_config.goal_radius:
                 self.hit_target = True
                 goal_reward = 1000 
             
-        termination = height < 0.33 #0.3
+        termination = height < 0.31 #0.3
 
         '''total reward'''
-        reward = ball_velocity_reward + goal_reward + back_swing_reward + termination*-100
+        reward = back_swing_reward + foot_velocity_reward + touch_reward + ball_velocity_reward + goal_reward + termination*-100
         info = {
                 # 'ori_reward': ori_reward, 'height_reward': height_reward,
                 # 'omega_reward': omega_reward, 'torq_regu': joint_torq_regu_reward,
                 # 'velo_regu': joint_velo_regu_reward, 'no_jump': nojump_reward,
                 # 'foot_contact': foot_contact_reward, 'body_contact': body_contact_reward,
                 'back_swing':self.back_swing,'touch_ball':self.touch_ball_with_correct_foot,
-                'total_reward': reward,
-                'ball_velocity_reward': ball_velocity_reward, 'goal_reward': goal_reward,
+                'total_reward': reward, 'foot_velocity_reward':foot_velocity_reward, 'touch_reward': touch_reward,
+                'ball_velocity_reward': ball_velocity_reward,
                 'is_success': True if self.hit_target else False,
                 }
         if self.gui:
@@ -141,7 +146,7 @@ class KickBallImitation(KickBall):
                          rollingFriction=self.sim_config.ground_rolling_friction, spinningFriction=self.sim_config.ground_spinning_friction, restitution=self.sim_config.ground_restitution)
 
         '''reset ball'''
-        p.resetBasePositionAndOrientation(self.ballID, [0.2,0,0.07], self.StartOrientation)
+        p.resetBasePositionAndOrientation(self.ballID, [0.4,0,0.07], self.StartOrientation)
 
         '''reset robot'''
         p.resetBasePositionAndOrientation(self.robotID, self.StartPos, self.StartOrientation)
