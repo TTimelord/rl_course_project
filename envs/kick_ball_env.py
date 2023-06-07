@@ -83,9 +83,9 @@ class KickBall(gym.Env):
         self.qpos_buffer = qpos
 
         '''compute reward'''
-        ori_reward = 1.0 * rbf_reward(grav, [0, 0, -1], -1.)
+        # ori_reward = 1.0 * rbf_reward(grav, [0, 0, -1], -1.)
         height = pos[2]
-        height_reward = 1.0 * rbf_reward(height, self.robot_config.center_height * 0.999, -10.)
+        # height_reward = 1.0 * rbf_reward(height, self.robot_config.center_height * 0.999, -10.)
         # omega_reward = 0.067 * rbf_reward(omega, [0, 0, 0], -0.05)
         # joint_torq_regu_reward = 0.067 * rbf_reward(torq, 0, -0.5)
         # joint_velo_regu_reward = 0.067 * rbf_reward(qvel, 0, -0.05)
@@ -108,7 +108,7 @@ class KickBall(gym.Env):
 
         reward = ball_velocity_reward + goal_reward
         info = {
-                'ori_reward': ori_reward, 'height_reward': height_reward,
+                # 'ori_reward': ori_reward, 'height_reward': height_reward,
                 # 'omega_reward': omega_reward, 'torq_regu': joint_torq_regu_reward,
                 # 'velo_regu': joint_velo_regu_reward, 'no_jump': nojump_reward,
                 # 'foot_contact': foot_contact_reward, 'body_contact': body_contact_reward,
@@ -144,7 +144,7 @@ class KickBall(gym.Env):
                          rollingFriction=self.sim_config.ground_rolling_friction, spinningFriction=self.sim_config.ground_spinning_friction, restitution=self.sim_config.ground_restitution)
 
         '''reset ball'''
-        p.resetBasePositionAndOrientation(self.ballID, [0.2,0,0.07], self.StartOrientation)
+        p.resetBasePositionAndOrientation(self.ballID, [0.3,0,0.07], self.StartOrientation)
 
         '''reset robot'''
         p.resetBasePositionAndOrientation(self.robotID, self.StartPos, self.StartOrientation)
