@@ -33,9 +33,9 @@ class KickBallStand(KickBall):
         self.qpos_buffer = qpos
         
         '''compute reward'''
-        ori_reward = 1.0 * rbf_reward(grav, [0, 0, -1], -1.)
+        # ori_reward = 1.0 * rbf_reward(grav, [0, 0, -1], -1.)
         height = pos[2]
-        height_reward = 1.0 * rbf_reward(height, self.robot_config.center_height * 0.999, -10.)
+        # height_reward = 1.0 * rbf_reward(height, self.robot_config.center_height * 0.999, -10.)
         # print(height)
         if height >=0.3:
             height_reward = 3*np.log((height-0.29999)/0.1)
@@ -63,9 +63,9 @@ class KickBallStand(KickBall):
         #          joint_torq_regu_reward + joint_velo_regu_reward + \
         #          foot_contact_reward + body_contact_reward + nojump_reward
 
-        reward = ball_velocity_reward + goal_reward +height_reward*0+ termination*-10#-10
+        reward = ball_velocity_reward + goal_reward + termination*-100 #-10
         info = {
-                'ori_reward': ori_reward, 'height_reward': height_reward,
+                # 'ori_reward': ori_reward, 'height_reward': height_reward,
                 # 'omega_reward': omega_reward, 'torq_regu': joint_torq_regu_reward,
                 # 'velo_regu': joint_velo_regu_reward, 'no_jump': nojump_reward,
                 # 'foot_contact': foot_contact_reward, 'body_contact': body_contact_reward,
@@ -81,7 +81,7 @@ class KickBallStand(KickBall):
         # else:
         done = False
             
-        if termination:
+        if self.simstep_cnt > 3*self.sim_config.simulation_freq or self.hit_target or termination:
             done = True
 
         return observation, reward, done, info
