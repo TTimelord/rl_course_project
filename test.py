@@ -6,14 +6,12 @@ import envs
 import time
 
 robot_config = RobotConfig()
-eval_env = gym.make('KickBall-v0', connect_GUI=True)
+eval_env = gym.make('KickBallImitation-v0', connect_GUI=True)
 
-# model = PPO("MlpPolicy", eval_env, verbose=1, tensorboard_log="./logs/")
+'''load trained agent'''
+model = PPO.load('models/KickBallImitation-v0.zip', print_system_info=True)
 
-# load trained agent
-model = PPO.load('models/PPO_random_goal.zip', print_system_info=True)
-
-# evaluation with GUI
+'''evaluation with GUI'''
 # evaluate_policy(model, eval_env, n_eval_episodes=10)
 while True:
     obs = eval_env.reset()
@@ -24,4 +22,3 @@ while True:
         time.sleep(1./robot_config.control_freq)
         if done:
             break
-        print(reward)
