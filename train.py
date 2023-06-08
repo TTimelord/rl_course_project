@@ -25,7 +25,7 @@ model = PPO("MlpPolicy", train_env, verbose=1, tensorboard_log="./logs/", learni
 print(model.policy)
 checkpoint_callback = CheckpointCallback(save_freq=1e6//n_procs, save_path='./models/auto_save/', name_prefix=gym_id)
 
-'''training'''
+'''training (set reset_num_timesteps=False if continue training)'''
 model.learn(total_timesteps=1e7, tb_log_name=gym_id, reset_num_timesteps=True, callback=checkpoint_callback)
 
 '''save trained agent'''
