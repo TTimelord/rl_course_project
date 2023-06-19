@@ -1,4 +1,6 @@
-# Installation
+# Learning to Kick for a Bipedal Robot with Deep Reinforcement Learning
+Project for Prof. Shengbo Eben Li's Reinforcement Learning and Control course in Tsinghua University.
+## Installation
 1. clone this repo
 2. install pytorch
 
@@ -19,7 +21,7 @@ pip install pybullet
 ```
 Documentation: https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/
 
-# Code Structure
+## Code Structure
 - rl_course_project
     - `assets/` \
         store URDF file of the robot
