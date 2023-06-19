@@ -24,34 +24,19 @@ Documentation: https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2Sedq
     - `assets/` \
         store URDF file of the robot
     - `envs/` \
-        存放强化学习 gym 环境(目前使用的stable-baselines3是1.8.0版本，因此还使用的是gym而不是gymnasium(https://gymnasium.farama.org/))。
-        - `kick_ball_env.py`
-        踢球的环境，目前会加载机器人以及足球。
-            > 变量含义：
-            > - `qpos`和`qvel`：机器人关节位置和速度
-            > - `goal_pos`: 球门的位置
-            > - `pos`: 机器人身体位置
-        - `run_env.py`
-        一个继承自KickBall的环境，用来学习跑步，可以使用类似的方法写新环境
-
+        gym environments
+        - `kick_ball_env.py` only task reward
+        - `kick_ball_stand_env.py` task reward with fall termination
+        - `kick_ball_imitation_env` task reward, termination and imitation reward
     - `logs/` \
         tensorboard logs
     - `models/`\
-        存训练好的RL模型
+        saved models
     - `test_urdf.py`\
-        可用来测试URDF以及仿真环境数据读取
+        test simulation and urdf
     - `train.py`\
-        使用stable-baselines3来进行RL训练
+        use stable-baselines3 to train RL agnet
     - `test.py`\
-        测试训练出来的RL模型
+        Test trained model
     - `config.py`\
-        存放机器人和仿真环境的参数
-
-# TODO
-## 确定参数
-1. friction, max_torque, max_velocity
-2. p.setJointMotorControl2中的positionGain
-## 奖励函数
-1. contact reward 需要重新检查link序号
-## Randomization
-球要随机放置吗
+        parameters of the robot and simulation
